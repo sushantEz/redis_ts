@@ -11,9 +11,13 @@ const server: net.Server = net.createServer((socketConn: net.Socket) => {
 
     socketConn.on("data", (d: Buffer) => {
         console.log(d, d.toString("utf-8"));
-        socketConn.write("+PONG\r\n");
+        let data = d.toString("utf-8");
+        data.split("\n").forEach(e => socketConn.write("+PONG\r\n"));
+        // socketConn.write("+PONG\r\n");
     });
 
+    socketConn.on("close", (e: boolean) => console.log("connection closed ?", e));
+    socketConn.on("error", (e: Error) => console.log("error occured", e));
 
 });
 
