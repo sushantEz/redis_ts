@@ -11,9 +11,7 @@ export const getKeys = () => DATA_MAP.keys();
 export const expiryLoop = () => {
     getKeys().forEach(k => {
         const v = get(k);
-        console.log(k, v);
         if (!v.v) return;
-
         if (!!v.ttl && !!v.type) {
             const expired = isExpired(v);
             if (expired) del(k);

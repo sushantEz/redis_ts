@@ -1,7 +1,7 @@
 import * as net from "net";
 import { ETtlType, EXNMode, tokens, type TSleepCmd } from "../interfaces";
-import { isExpired, sleep } from "../services";
-import { get, set } from "../cache";
+import { calRemainingTime, isExpired, sleep } from "../services";
+import { del, get, set } from "../cache";
 
 export const setter = (con: net.Socket, [k, v, ...rest]: string[]) => {
     if (!(!!k) || typeof k != "string") { con.write("ERROR: Key must be a valid String\r\n"); return; }
@@ -19,9 +19,9 @@ export const setter = (con: net.Socket, [k, v, ...rest]: string[]) => {
         let elm = e.toLowerCase();
         let incIdx = i + 1;
         if (elm == EXNMode.NX || elm == EXNMode.XX) {
-            mode = elm as EXNMode;
+            mode = elm;
         }
-        else if (elm == ETtlType.EX || elm == ETtlType.PX) {
+        else if (elm == ETtlType.EX || elm == ETtlType.PX || elm == ETtlType.EXAT || elm == ETtlType.PXAT) {
             if (isNaN(Number(rest[incIdx]))) {
                 con.write("ERRR: Invalid TTL Value\r\n");
                 return;
@@ -40,14 +40,14 @@ export const setter = (con: net.Socket, [k, v, ...rest]: string[]) => {
         con.write("nil\r\n");
         return;
     }
-
+    console.log({ v, ttl, type, at: Date.now() });
     set(k, { v, ttl, type, at: Date.now() });
     con.write("OK\r\n");
 
     return;
 };
 
-export const getter = (con: net.Socket, k: string) => {
+export const getter = (con: net.Socket, [k]: string[]) => {
     let v = get(k) || 'nil';
     if (v != "nil" && !!v.ttl) {
         // passive expiry
@@ -57,9 +57,56 @@ export const getter = (con: net.Socket, k: string) => {
     return;
 };
 
-export const sleeper = async (con: net.Socket, [time, _, first, ...rest]: TSleepCmd) => {
-    await sleep(Number(time) * 1000);
-    if (first == "get") getter(con, rest[0]);
+export const sleeper = async (con: net.Socket, [t, _, first, ...rest]: TSleepCmd) => {
+    await sleep(Number(t) * 1000);
+    if (first == "get") getter(con, rest);
     else if (first == "set") setter(con, rest);
+    return;
+};
 
+export const setExpiry = (con: net.Socket, [k, t]: string[]) => {
+    const v = get(k);
+    if (!v || !v.v) { con.write(0 + "\r\n"); return; }
+    v.ttl = t;
+    v.type = ETtlType.EX;
+    set(k, v);
+    con.write(1 + "\r\n");
+    return;
+};
+
+export const setPExpiry = (con: net.Socket, [k, t]: string[]) => {
+    const v = get(k);
+    if (!v || !v.v) { con.write(0 + "\r\n"); return; }
+    v.ttl = t;
+    v.type = ETtlType.PX;
+    set(k, v);
+    con.write(1 + "\r\n");
+    return;
+};
+
+export const getTtl = (con: net.Socket, [k]: string[]) => {
+    const v = get(k);
+    console.log({ v });
+    if (!v || !Object.keys(v).length) { con.write(-2 + "\r\n"); return; }
+    if (!v?.ttl || v?.type == ETtlType.NONE) { con.write(-1 + "\r\n"); return; }
+    let remainingTime = (calRemainingTime(v) / 1000);
+    if (remainingTime <= 0) {
+        del(k);
+        con.write(-2 + "\r\n"); return;
+    }
+    con.write(remainingTime.toFixed(2) + "\r\n");
+    return;
+};
+
+export const getPTtl = (con: net.Socket, [k]: string[]) => {
+    const v = get(k);
+    if (!v || !Object.keys(v).length) { con.write(-2 + "\r\n"); return; }
+    if (!v?.ttl || v?.type == ETtlType.NONE) { con.write(-1 + "\r\n"); return; }
+    const remainingTime = calRemainingTime(v);
+    if (remainingTime <= 0) {
+        del(k);
+        con.write(-2 + "\r\n"); return;
+    }
+    con.write(remainingTime + "\r\n");
+    return;
 };
