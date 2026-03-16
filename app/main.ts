@@ -11,6 +11,9 @@ console.log("Logs from your program will appear here!");
 
 const server: net.Server = net.createServer((socketConn: net.Socket) => {
 
+    const clientId = `${socketConn.remoteAddress}:${socketConn.remotePort}`;
+    console.log(`client ${clientId} connected!`);
+
     socketConn.on("data", (d: Buffer) => onData(socketConn, d));
     socketConn.on("close", (e: boolean) => console.log("connection closed ?", e));
     socketConn.on("error", (e: Error) => console.log("error occured", e));

@@ -36,10 +36,10 @@ export const push = (conn: any, flag: "r" | "l", rest: string[]) => {
 
     set(k, listExists);
     conn.write((listExists.v as DoublyLinkedList).llen() + "\r\n");
-
     connMap.get(k)?.forEach(v => {
         v.conn.resume();
-        v.conn.write((listExists.v as DoublyLinkedList).llen() + "\r\n" + listExists.v + "\r\n");
+        bpop(v.conn, flag, [k, "0"]);
+        // v.conn.write((listExists.v as DoublyLinkedList).llen() + "\r\n" + listExists.v + "\r\n");
         connMap.del(k);
     });
 
@@ -95,10 +95,14 @@ export const llen = (conn: any, [k]: string[]) => {
 
 export const bpop = (conn: any, flag: "r" | "l", [k, timeout]: string[]) => {
     if (!k || typeof k != "string" || tokens.includes(k)) { conn.write("ERROR: Key must be a valid String\r\n"); return; }
-    if (timeout != "" && isNaN(Number(timeout))) { conn.write("ERROR: Wrong number of arguments for 'blpop' command\r\n"); return; }
+    if (timeout != "" && isNaN(Number(timeout))) { conn.write("ERROR: Wrong number of arguments for command\r\n"); return; }
 
     const listExists = get(k);
-    if (!listExists || (listExists.ttl && isExpired(listExists))) { }
+    if (!listExists || (listExists.ttl && isExpired(listExists))) {
+        conn.pause();
+        connMap.set(k, { conn, timeout: Number(timeout), at: Date.now() });
+        return;
+    }
     else if (!(listExists.v instanceof DoublyLinkedList)) { conn.write("ERROR: Key does not contain a List\r\n"); return; }
     else if (listExists.v.llen() > 0) {
         let val;

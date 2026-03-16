@@ -1,7 +1,9 @@
 import * as net from "net";
-import { getter, setter, sleeper, setExpiry, setPExpiry, getTtl, getPTtl } from "../handlers/str";
+import { getter, setter, sleeper } from "../handlers/str";
+
 import { push, pop, lrange, llen, bpop } from "../handlers/list";
 import { EListCmdMode, type TSetCmd, type TSleepCmd } from "../interfaces";
+import { setExpiry, setPExpiry, getTtl, getPTtl } from "../handlers/common";
 
 const serialize = (d: Buffer) => d.toString("utf-8").trim();
 

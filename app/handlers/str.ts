@@ -1,7 +1,7 @@
 import * as net from "net";
-import { ETtlType, EXNMode, tokens, type TSleepCmd, type TValTypes, type TValue } from "../interfaces";
-import { calRemainingTime, isExpired, sleep } from "../services/data";
-import { del, get, set } from "../cache/data";
+import { ETtlType, EXNMode, tokens, type TSleepCmd, type TValue } from "../interfaces";
+import { isExpired, sleep } from "../services/data";
+import { get, set } from "../cache/data";
 
 export const setter = (conn: net.Socket, [k, v, ...rest]: string[]) => {
     if (!(!!k) || typeof k != "string") { conn.write("ERROR: Key must be a valid String\r\n"); return; }
@@ -61,52 +61,5 @@ export const sleeper = async (conn: net.Socket, [t, _, first, ...rest]: TSleepCm
     await sleep(Number(t) * 1000);
     if (first == "get") getter(conn, rest);
     else if (first == "set") setter(conn, rest);
-    return;
-};
-
-export const setExpiry = (conn: net.Socket, [k, t]: string[]) => {
-    const v = get(k);
-    if (!v || !v.v) { conn.write(0 + "\r\n"); return; }
-    v.ttl = t;
-    v.ttlType = ETtlType.EX;
-    set(k, v);
-    conn.write(1 + "\r\n");
-    return;
-};
-
-export const setPExpiry = (conn: net.Socket, [k, t]: string[]) => {
-    const v = get(k);
-    if (!v || !v.v) { conn.write(0 + "\r\n"); return; }
-    v.ttl = t;
-    v.ttlType = ETtlType.PX;
-    set(k, v);
-    conn.write(1 + "\r\n");
-    return;
-};
-
-export const getTtl = (conn: net.Socket, [k]: string[]) => {
-    const v = get(k);
-    console.log({ v });
-    if (!v || !Object.keys(v).length) { conn.write(-2 + "\r\n"); return; }
-    if (!v?.ttl || v?.ttlType == ETtlType.NONE) { conn.write(-1 + "\r\n"); return; }
-    let remainingTime = (calRemainingTime(v) / 1000);
-    if (remainingTime <= 0) {
-        del(k);
-        conn.write(-2 + "\r\n"); return;
-    }
-    conn.write(remainingTime.toFixed(2) + "\r\n");
-    return;
-};
-
-export const getPTtl = (conn: net.Socket, [k]: string[]) => {
-    const v = get(k);
-    if (!v || !Object.keys(v).length) { conn.write(-2 + "\r\n"); return; }
-    if (!v?.ttl || v?.ttlType == ETtlType.NONE) { conn.write(-1 + "\r\n"); return; }
-    const remainingTime = calRemainingTime(v);
-    if (remainingTime <= 0) {
-        del(k);
-        conn.write(-2 + "\r\n"); return;
-    }
-    conn.write(remainingTime + "\r\n");
     return;
 };
