@@ -3,7 +3,8 @@ import { getter, setter, sleeper } from "../handlers/str";
 
 import { push, pop, lrange, llen, bpop } from "../handlers/list";
 import { EListCmdMode, type TSetCmd, type TSleepCmd } from "../interfaces";
-import { setExpiry, setPExpiry, getTtl, getPTtl } from "../handlers/common";
+import { setExpiry, setPExpiry, getTtl, getPTtl, getType } from "../handlers/common";
+import { xadd, xrange } from "../handlers/stream";
 
 const serialize = (d: Buffer) => d.toString("utf-8").trim();
 
@@ -31,6 +32,9 @@ export const onData = (socketConn: net.Socket, d: Buffer) => {
             case "llen": llen(socketConn, rest); break;
             case "brpop": bpop(socketConn, EListCmdMode.RIGHTS, rest); break;
             case "blpop": bpop(socketConn, EListCmdMode.LEFTS, rest); break;
+            case "type": getType(socketConn, rest); break;
+            case "xadd": xadd(socketConn, rest); break;
+            case "xrange": xrange(socketConn, rest); break;
             case "quit": socketConn.end("socket connection closed!\r\n"); break; // we'll create separate handlers for it later, for now we can just end the connection with a message
             default: socketConn.write("Invalid Command\r\n"); break;
         }

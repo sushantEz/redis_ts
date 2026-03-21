@@ -1,7 +1,7 @@
-import { ETtlType, type TValue } from "../interfaces";
+import { ETtlType, type TBoolCallback, type TNumCallback, type TValMeta, type TValue } from "../interfaces";
 
 // active expiry
-export const isExpired = (v: TValue): boolean => {
+export const isExpired: TBoolCallback<TValMeta> = (v): boolean => {
     let expired = false;
     if (v.ttlType.toLowerCase() == ETtlType.NONE) { return expired; }
     else if (v.ttlType.toLowerCase() == ETtlType.EX) {
@@ -29,7 +29,7 @@ export const isExpired = (v: TValue): boolean => {
     return expired;
 };
 
-export const calRemainingTime = (v: TValue): number => {
+export const calRemainingTime: TNumCallback<TValMeta> = (v): number => {
     let remainingTime = 0;
 
     if (v.ttlType == ETtlType.NONE) remainingTime = -2;

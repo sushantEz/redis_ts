@@ -1,20 +1,8 @@
-import type { TValue } from "../interfaces";
-import { isExpired } from "../services/data";
+import { DataStore, StreamStore } from "../common/dataStore";
+import { NetConnStore } from "../common/netSocketStore";
+import { type TConnMapData, type TStreamValue, type TValue } from "../interfaces";
+import { isExpired, calRemainingTime } from "../services/data";
 
-export const DATA_MAP: Map<string, TValue> = new Map();
-
-export const get = (k: string) => DATA_MAP.get(k);
-export const set = (k: string, v: TValue) => DATA_MAP.set(k, v);
-export const del = (k: string) => DATA_MAP.delete(k);
-export const getKeys = () => DATA_MAP.keys();
-
-export const dataExpiryLoop = () => {
-    getKeys().forEach(k => {
-        const v = get(k);
-        if (!v?.v) return;
-        if (!!v.ttl && !!v.ttlType) {
-            const expired = isExpired(v);
-            if (expired) del(k);
-        }
-    });
-};
+export const DATA: DataStore<string, TValue> = new DataStore(100, isExpired, calRemainingTime);
+export const STREAMS: StreamStore<string, TStreamValue> = new StreamStore(100, isExpired, calRemainingTime);
+export const NET_CONN: NetConnStore<string, TConnMapData[]> = new NetConnStore(100);

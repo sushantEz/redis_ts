@@ -1,6 +1,6 @@
-import { get, set } from "../cache/data";
+import { DATA } from "../cache/data";
 import * as connMap from "../cache/netSoc";
-import { ETtlType, tokens } from "../interfaces";
+import { EDataType, ETtlType, tokens } from "../interfaces";
 import { isExpired } from "../services/data";
 import { DoublyLinkedList } from "../services/doublyLinkedList";
 
@@ -12,7 +12,7 @@ export const push = (conn: any, flag: "r" | "l", rest: string[]) => {
     if (tokens.includes(k.toLowerCase())) { conn.write("ERROR: Key must be a valid String\r\n"); return; }
     if (rest.some(e => tokens.includes(e.toLowerCase()))) { conn.write("ERROR: Parameters must be valid values\r\n"); return; }
 
-    let listExists = get(k);
+    let listExists = DATA.get(k);
 
     if (listExists && listExists.ttl && isExpired(listExists)) listExists = undefined;
     if (!listExists || !(listExists.v instanceof DoublyLinkedList)) {
@@ -20,7 +20,8 @@ export const push = (conn: any, flag: "r" | "l", rest: string[]) => {
             v: new DoublyLinkedList(),
             ttl: "",
             ttlType: ETtlType.NONE,
-            at: Date.now()
+            at: Date.now(),
+            dType: EDataType.LIST
         };
     }
 
@@ -34,13 +35,13 @@ export const push = (conn: any, flag: "r" | "l", rest: string[]) => {
         }
     }
 
-    set(k, listExists);
+    DATA.set(k, listExists);
     conn.write((listExists.v as DoublyLinkedList).llen() + "\r\n");
-    connMap.get(k)?.forEach(v => {
+    connMap.DATA.get(k)?.forEach(v => {
         v.conn.resume();
         bpop(v.conn, flag, [k, "0"]);
         // v.conn.write((listExists.v as DoublyLinkedList).llen() + "\r\n" + listExists.v + "\r\n");
-        connMap.del(k);
+        connMap.DATA.del(k);
     });
 
     return;
@@ -50,7 +51,7 @@ export const pop = (conn: any, flag: "r" | "l", rest: string[]) => {
     const [k] = rest;
     if (!(!!k) || typeof k != "string") { conn.write("ERROR: Key must be a valid String\r\n"); return; }
 
-    const listExists = get(k);
+    const listExists = DATA.get(k);
     if (!listExists || listExists.ttl && isExpired(listExists)) { conn.write("nil\r\n"); return; }
     if (!(listExists.v instanceof DoublyLinkedList)) { conn.write("ERROR: Key does not contain a List\r\n"); return; }
 
@@ -61,7 +62,7 @@ export const pop = (conn: any, flag: "r" | "l", rest: string[]) => {
         val = listExists.v.lpop();
     }
 
-    set(k, listExists);
+    DATA.set(k, listExists);
     if (!val) { conn.write("nil\r\n"); return; }
     conn.write(`$${val.length}\r\n${val}\r\n`);
     return;
@@ -72,7 +73,7 @@ export const lrange = (conn: any, rest: string[]) => {
     if (!k || typeof k != "string") { conn.write("ERROR: Key must be a valid String\r\n"); return; }
     if (isNaN(Number(start)) || isNaN(Number(stop))) { conn.write("ERROR: Start and Stop must be valid numbers\r\n"); return; }
 
-    const listExists = get(k);
+    const listExists = DATA.get(k);
 
     if (!listExists || listExists.ttl && isExpired(listExists)) { conn.write("nil\r\n"); return; }
     if (!(listExists.v instanceof DoublyLinkedList)) { conn.write("ERROR: Key does not contain a List\r\n"); return; }
@@ -85,7 +86,7 @@ export const lrange = (conn: any, rest: string[]) => {
 export const llen = (conn: any, [k]: string[]) => {
     if (!k || typeof k != "string") { conn.write("ERROR: Key must be a valid String\r\n"); return; }
 
-    const listExists = get(k);
+    const listExists = DATA.get(k);
     if (!listExists || listExists.ttl && isExpired(listExists)) { conn.write("0\r\n"); return; }
     if (!(listExists.v instanceof DoublyLinkedList)) { conn.write("ERROR: Key does not contain a List\r\n"); return; }
 
@@ -97,10 +98,10 @@ export const bpop = (conn: any, flag: "r" | "l", [k, timeout]: string[]) => {
     if (!k || typeof k != "string" || tokens.includes(k)) { conn.write("ERROR: Key must be a valid String\r\n"); return; }
     if (timeout != "" && isNaN(Number(timeout))) { conn.write("ERROR: Wrong number of arguments for command\r\n"); return; }
 
-    const listExists = get(k);
+    const listExists = DATA.get(k);
     if (!listExists || (listExists.ttl && isExpired(listExists))) {
         conn.pause();
-        connMap.set(k, { conn, timeout: Number(timeout), at: Date.now() });
+        connMap.DATA.set(k, { conn, timeout: Number(timeout), at: Date.now() });
         return;
     }
     else if (!(listExists.v instanceof DoublyLinkedList)) { conn.write("ERROR: Key does not contain a List\r\n"); return; }
@@ -112,13 +113,13 @@ export const bpop = (conn: any, flag: "r" | "l", [k, timeout]: string[]) => {
             val = listExists.v.lpop();
         }
 
-        set(k, listExists);
+        DATA.set(k, listExists);
         if (!val) { conn.write("nil\r\n"); return; }
         conn.write(`$${val.length}\r\n${val}\r\n`);
         return;
     } else if (listExists.v.llen() <= 0) {
         conn.pause();
-        connMap.set(k, { conn, timeout: Number(timeout), at: Date.now() });
+        connMap.DATA.set(k, { conn, timeout: Number(timeout), at: Date.now() });
         return;
     }
 };

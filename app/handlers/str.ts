@@ -1,7 +1,7 @@
 import * as net from "net";
-import { ETtlType, EXNMode, tokens, type TSleepCmd, type TValue } from "../interfaces";
+import { EDataType, ETtlType, EXNMode, tokens, type TSleepCmd, type TValue } from "../interfaces";
 import { isExpired, sleep } from "../services/data";
-import { get, set } from "../cache/data";
+import  { DATA } from "../cache/data";
 
 export const setter = (conn: net.Socket, [k, v, ...rest]: string[]) => {
     if (!(!!k) || typeof k != "string") { conn.write("ERROR: Key must be a valid String\r\n"); return; }
@@ -32,7 +32,7 @@ export const setter = (conn: net.Socket, [k, v, ...rest]: string[]) => {
     });
 
     console.log({ ttl, ttlType, mode });
-    const exists = (!!get(k)?.v);
+    const exists = (!!DATA.get(k)?.v);
     if (mode == EXNMode.NX && exists) {
         conn.write("nil\r\n");
         return;
@@ -41,14 +41,14 @@ export const setter = (conn: net.Socket, [k, v, ...rest]: string[]) => {
         return;
     }
     console.log({ v, ttl, ttlType, at: Date.now() });
-    set(k, { v, ttl, ttlType, at: Date.now() });
+    DATA.set(k, { v, ttl, ttlType, at: Date.now(), dType: EDataType.STRING });
     conn.write("OK\r\n");
 
     return;
 };
 
 export const getter = (conn: net.Socket, [k]: string[]) => {
-    let v: TValue | "nil" = get(k) || "nil";
+    let v: TValue | "nil" = DATA.get(k) || "nil";
     if (v != "nil" && v.ttlType != ETtlType.NONE) {
         // passive expiry
         v = isExpired(v) ? "nil" : v;
