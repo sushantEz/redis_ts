@@ -1,6 +1,6 @@
 import { DataStore, StreamStore } from "../common/dataStore";
 import { NetConnStore } from "../common/netSocketStore";
-import { type TConnMapData, type TStreamValue, type TValue } from "../interfaces";
+import type { TConnMapData, TStreamValue, TValue } from "../interfaces";
 import { isExpired, calRemainingTime } from "../services/data";
 
 export const DATA: DataStore<string, TValue> = new DataStore(100, isExpired, calRemainingTime);

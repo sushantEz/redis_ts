@@ -1,5 +1,4 @@
-import { DATA } from "../cache/data";
-import * as connMap from "../cache/netSoc";
+import { DATA, NET_CONN } from "../cache/data";
 import { EDataType, ETtlType, tokens } from "../interfaces";
 import { isExpired } from "../services/data";
 import { DoublyLinkedList } from "../services/doublyLinkedList";
@@ -37,11 +36,11 @@ export const push = (conn: any, flag: "r" | "l", rest: string[]) => {
 
     DATA.set(k, listExists);
     conn.write((listExists.v as DoublyLinkedList).llen() + "\r\n");
-    connMap.DATA.get(k)?.forEach(v => {
+    NET_CONN.get(k)?.forEach(v => {
         v.conn.resume();
         bpop(v.conn, flag, [k, "0"]);
         // v.conn.write((listExists.v as DoublyLinkedList).llen() + "\r\n" + listExists.v + "\r\n");
-        connMap.DATA.del(k);
+        NET_CONN.del(k);
     });
 
     return;
@@ -101,7 +100,12 @@ export const bpop = (conn: any, flag: "r" | "l", [k, timeout]: string[]) => {
     const listExists = DATA.get(k);
     if (!listExists || (listExists.ttl && isExpired(listExists))) {
         conn.pause();
-        connMap.DATA.set(k, { conn, timeout: Number(timeout), at: Date.now() });
+        NET_CONN.set(k, {
+            conn, timeout: Number(timeout),
+            at: Date.now(),
+            type: EDataType.LIST,
+            count: Infinity
+        });
         return;
     }
     else if (!(listExists.v instanceof DoublyLinkedList)) { conn.write("ERROR: Key does not contain a List\r\n"); return; }
@@ -119,7 +123,12 @@ export const bpop = (conn: any, flag: "r" | "l", [k, timeout]: string[]) => {
         return;
     } else if (listExists.v.llen() <= 0) {
         conn.pause();
-        connMap.DATA.set(k, { conn, timeout: Number(timeout), at: Date.now() });
+        NET_CONN.set(k, {
+            conn, timeout: Number(timeout),
+            at: Date.now(),
+            type: EDataType.LIST,
+            count: Infinity
+        });
         return;
     }
 };

@@ -1,29 +1,31 @@
-import { ETtlType, type TBoolCallback, type TNumCallback, type TValMeta, type TValue } from "../interfaces";
+import { ETtlType, type TBoolCallback, type TNumCallback, type TValMeta } from "../interfaces";
 
 // active expiry
 export const isExpired: TBoolCallback<TValMeta> = (v): boolean => {
     let expired = false;
-    if (v.ttlType.toLowerCase() == ETtlType.NONE) { return expired; }
-    else if (v.ttlType.toLowerCase() == ETtlType.EX) {
-        if (Date.now() > (v.at + (Number(v.ttl) * 1000))) {
-            expired = true;
-            console.log("deleted", v.ttl, v.ttlType);
+    if (!!v.ttl && !!v.ttlType) {
+        if (v.ttlType.toLowerCase() == ETtlType.NONE) { return expired; }
+        else if (v.ttlType.toLowerCase() == ETtlType.EX) {
+            if (Date.now() > (v.at + (Number(v.ttl) * 1000))) {
+                expired = true;
+                console.log("deleted", v.ttl, v.ttlType);
+            }
+        } else if (v.ttlType.toLowerCase() == ETtlType.PX) {
+            if (Date.now() > v.at + Number(v.ttl)) {
+                expired = true;
+                console.log("deleted", v.ttl, v.ttlType);
+            }
+        } else if (v.ttlType.toLowerCase() == ETtlType.EXAT) {
+            if (Date.now() > Number(v.ttl) * 1000) {
+                expired = true;
+                console.log("deleted", v.ttl, v.ttlType);
+            }
         }
-    } else if (v.ttlType.toLowerCase() == ETtlType.PX) {
-        if (Date.now() > v.at + Number(v.ttl)) {
-            expired = true;
-            console.log("deleted", v.ttl, v.ttlType);
-        }
-    } else if (v.ttlType.toLowerCase() == ETtlType.EXAT) {
-        if (Date.now() > Number(v.ttl) * 1000) {
-            expired = true;
-            console.log("deleted", v.ttl, v.ttlType);
-        }
-    }
-    else if (v.ttlType.toLowerCase() == ETtlType.PXAT) {
-        if (Date.now() > Number(v.ttl)) {
-            expired = true;
-            console.log("deleted", v.ttl, v.ttlType);
+        else if (v.ttlType.toLowerCase() == ETtlType.PXAT) {
+            if (Date.now() > Number(v.ttl)) {
+                expired = true;
+                console.log("deleted", v.ttl, v.ttlType);
+            }
         }
     }
     return expired;

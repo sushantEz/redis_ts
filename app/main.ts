@@ -1,6 +1,5 @@
 import * as net from "net";
 import { config } from "dotenv";
-import { expiryLoop } from "./cache";
 import { onData } from "./controllers";
 
 config({ path: ".env" });
@@ -21,10 +20,6 @@ const server: net.Server = net.createServer((socketConn: net.Socket) => {
 });
 
 server.listen(port);
-
-setInterval(() => {
-    expiryLoop();
-}, 100);
 
 // const serialize = (data: string) => {
 //     // let data = d.toString("utf-8");
