@@ -49,7 +49,8 @@ export const xadd = (conn: net.Socket, d: string[]) => {
             ttlType: ETtlType.NONE,
             at,
             dType: EDataType.STREAM,
-            del: false
+            del: false,
+            version: 0
         };
     }
 
@@ -97,6 +98,7 @@ export const xadd = (conn: net.Socket, d: string[]) => {
     stream.v.set(id, fields);
     stream.ids.push(id);
     stream.lastId = id;
+    stream.version++;
     STREAMS.set(k, stream);
 
     const netConns = NET_CONN.get(k);
@@ -224,6 +226,7 @@ export const xdel = (conn: net.Socket, [k, ...ids]: string[]) => {
     });
     stream.ids = rids;
     stream.lastId = rids[rids.length - 1] || "";
+    stream.version++;
     STREAMS.set(k, stream);
     conn.write("integer" + delCount + "\r\n");
     return;
@@ -285,7 +288,7 @@ export const xtrim = (conn: net.Socket, [key, strategy, ...args]: string[]) => {
     stream.lastId = stream.ids.length
         ? stream.ids[stream.ids.length - 1]
         : "0-0";
-
+    stream.version++;
     STREAMS.set(key, stream);
 
     conn.write(`${removed}\r\n`);

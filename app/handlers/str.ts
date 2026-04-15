@@ -41,12 +41,11 @@ export const setter = (conn: net.Socket, [k, v, ...rest]: string[]) => {
     }
 
     if (!isNaN(Number(v))) {
-        DATA.set(k, { v: Number(v), ttl, ttlType, at: Date.now(), dType: EDataType.NUMBER });
+        DATA.set(k, { v: Number(v), ttl, ttlType, at: Date.now(), dType: EDataType.NUMBER, version: 0 });
     } else {
-        DATA.set(k, { v, ttl, ttlType, at: Date.now(), dType: EDataType.STRING });
+        DATA.set(k, { v, ttl, ttlType, at: Date.now(), dType: EDataType.STRING, version: 0 });
     }
     conn.write("OK\r\n");
-
     return;
 };
 

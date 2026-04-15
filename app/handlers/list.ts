@@ -20,7 +20,8 @@ export const push = (conn: any, flag: "r" | "l", rest: string[]) => {
             ttl: "",
             ttlType: ETtlType.NONE,
             at: Date.now(),
-            dType: EDataType.LIST
+            dType: EDataType.LIST,
+            version: 0
         };
     }
 
@@ -33,7 +34,7 @@ export const push = (conn: any, flag: "r" | "l", rest: string[]) => {
             (listExists.v as DoublyLinkedList).lpush(e);
         }
     }
-
+    listExists.version++;
     DATA.set(k, listExists);
     conn.write((listExists.v as DoublyLinkedList).llen() + "\r\n");
     NET_CONN.get(k)?.forEach(v => {
@@ -60,7 +61,7 @@ export const pop = (conn: any, flag: "r" | "l", rest: string[]) => {
     } else if (flag === "l") {
         val = listExists.v.lpop();
     }
-
+    listExists.version++;
     DATA.set(k, listExists);
     if (!val) { conn.write("nil\r\n"); return; }
     conn.write(`$${val.length}\r\n${val}\r\n`);
@@ -116,7 +117,7 @@ export const bpop = (conn: any, flag: "r" | "l", [k, timeout]: string[]) => {
         } else if (flag === "l") {
             val = listExists.v.lpop();
         }
-
+        listExists.version++;
         DATA.set(k, listExists);
         if (!val) { conn.write("nil\r\n"); return; }
         conn.write(`$${val.length}\r\n${val}\r\n`);

@@ -17,7 +17,8 @@ export const inc = (conn: net.Socket, [k, ...v]: string[]) => {
             at: Date.now(),
             dType: EDataType.NUMBER,
             ttl: "",
-            ttlType: ETtlType.NONE
+            ttlType: ETtlType.NONE,
+            version: 0
         };
     } else if (data.dType !== EDataType.NUMBER) {
         conn.write("ERR value is not an integer or out of range\r\n");
@@ -25,6 +26,7 @@ export const inc = (conn: net.Socket, [k, ...v]: string[]) => {
     }
 
     (data.v as number) += i;
+    data.version++;
     DATA.set(k, data);
     conn.write(`(integer)${data.v}`);
     return;
@@ -43,7 +45,8 @@ export const dec = (conn: net.Socket, [k, ...v]: string[]) => {
             at: Date.now(),
             dType: EDataType.NUMBER,
             ttl: "",
-            ttlType: ETtlType.NONE
+            ttlType: ETtlType.NONE,
+            version: 0
         };
     } else if (data.dType !== EDataType.NUMBER) {
         conn.write("ERR value is not an integer or out of range\r\n");
@@ -51,8 +54,8 @@ export const dec = (conn: net.Socket, [k, ...v]: string[]) => {
     }
 
     (data.v as number) -= d;
+    data.version++;
     DATA.set(k, data);
     conn.write(`(integer)${data.v}`);
     return;
 };
-

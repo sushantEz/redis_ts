@@ -1,8 +1,11 @@
 import * as net from "net";
-import { ETtlType } from "../interfaces";
+import { ETtlType, type TValNum } from "../interfaces";
 import { calRemainingTime } from "../services/data";
-import { CONN_CMDS, DATA } from "../cache/data";
+import { CONN_CMDS, DATA, NET_CONN } from "../cache/data";
 import { onData } from "../controllers";
+import { serializeAndChecker } from "../helpers";
+
+const serialize = (d: Buffer) => d.toString("utf-8").trim();
 
 export const setExpiry = (conn: net.Socket, [k, t]: string[]) => {
     const v = DATA.get(k);
@@ -62,8 +65,30 @@ export const getType = (conn: net.Socket, [k]: string[]) => {
     return;
 };
 
+export const watch = (conn: net.Socket, wks: string[]) => {
+    const connAddress = `${conn.remoteAddress}:${conn.remotePort}`;
+    let cmdStoreData = CONN_CMDS.get(connAddress) || null;
+    if (!cmdStoreData) cmdStoreData = { conn, cmds: [], wks: [], unwks: [] };
+
+    for (const wk of wks) {
+        const v = (DATA.get(wk) as TValNum)?.version || -1;
+        cmdStoreData.wks.push({ [wk]: v });
+    }
+    CONN_CMDS.set(connAddress, cmdStoreData);
+    conn.write("OK\r\n");
+    return;
+};
+
 export const multi = (conn: net.Socket) => {
-    CONN_CMDS.set(`${conn.remoteAddress}:${conn.remotePort}`, { conn, cmds: [] });
+    const connAddress = `${conn.remoteAddress}:${conn.remotePort}`;
+    let cmdStoreData = CONN_CMDS.get(connAddress) || null;
+    if (!cmdStoreData) cmdStoreData = {
+        conn,
+        cmds: [],
+        wks: [],
+        unwks: []
+    };
+    CONN_CMDS.set(connAddress, cmdStoreData);
     conn.write("OK\r\n");
     return;
 };
@@ -88,12 +113,37 @@ export const exec = (conn: net.Socket) => {
         conn.write("\r\n");
         return;
     }
+    let txnDiscarded = false;
+    cmdStoreData.wks.forEach(wk => {
+        if (txnDiscarded) return;
+        const k = Object.keys(wk)[0];
+        const v = (DATA.get(k) as TValNum)?.version || 0;
+        if (v != wk[k]) {
+            conn.write("Transaction discarded because of watched key " + k + "\r\n");
+            CONN_CMDS.delete(connAddress);
+            txnDiscarded = true;
+            return;
+        }
+    });
+    if (txnDiscarded) return;
     for (const [idx, cmd] of cmdStoreData.cmds.entries()) {
-        onData(conn, cmd);
-        cmdStoreData.cmds.splice(idx, 1);
+        onData(conn, cmd, true);
+        console.log("executing command:", idx, cmd.toString("utf-8"));
     }
     CONN_CMDS.delete(connAddress);
     conn.write("exec done!\r\n");
 
+    return;
+};
+
+export const info = (conn: net.Socket) => {
+    const mem = process.memoryUsage();
+    const infoObj = {
+        redis_version: "0.0.0.1",
+        connected_clients: NET_CONN.keys().toArray().length,
+        used_memory: ((mem.heapUsed + mem.external) / 1024 / 1024).toFixed(2) + ' MB',
+        role: "Master"
+    };
+    conn.write(JSON.stringify(infoObj));
     return;
 };

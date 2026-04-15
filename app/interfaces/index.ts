@@ -7,7 +7,7 @@ export const enum EXNMode { NX = "nx", XX = "xx" }
 export const enum ETtlType { PX = "px", EX = "ex", NONE = "none", PXAT = "pxat", EXAT = "exat" };
 export const enum EDataType { NUMBER = "number", STRING = "string", LIST = "list", SET = "set", HASH = "hash", ZSET = "zset", STREAM = "stream", VECTOR_SET = "vectorset", JSON = "json" };
 
-export type TValMeta = { ttl: string, ttlType: ETtlType, at: number; dType: EDataType; };
+export type TValMeta = { ttl: string, ttlType: ETtlType, at: number; dType: EDataType; version: number; };
 
 export type TValStr = TValMeta & { v: string; };
 export type TValNum = TValMeta & { v: number; };
