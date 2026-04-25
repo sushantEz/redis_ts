@@ -1,5 +1,4 @@
 import { getter, setter, sleeper } from "../handlers/str";
-
 import { push, pop, lrange, llen, bpop } from "../handlers/list";
 import { EListCmdMode, type TAuthenticConn, type TSetCmd, type TSleepCmd } from "../interfaces";
 import { setExpiry, setPExpiry, getTtl, getPTtl, getType, multi, exec, info, watch } from "../handlers/common";
@@ -7,6 +6,7 @@ import { xadd, xdel, xlen, xrange, xread, xtrim } from "../handlers/stream";
 import { dec, inc } from "../handlers/txns";
 import { serialize, queueCmd } from "../helpers";
 import { authenticate } from "../middlewares/auth";
+import { acl } from "../handlers/acl";
 
 export const onData = async (conn: TAuthenticConn, d: Buffer, fromExec?: boolean) => {
 
@@ -47,9 +47,10 @@ export const onData = async (conn: TAuthenticConn, d: Buffer, fromExec?: boolean
             case "multi": multi(conn); break;
             case "exec": exec(conn); break;
             case "watch": watch(conn, rest); break;
+            case "acl": acl(conn, rest); break;
             case "info": info(conn); break;
-            case "quit": conn.end("socket connection closed!\r\n"); break; // we'll create separate handlers for it later, for now we can just end the connection with a message
             case "auth": conn.write("OK!\r\n"); break;
+            case "quit": conn.end("socket connection closed!\r\n"); break; // we'll create separate handlers for it later, for now we can just end the connection with a message
             default: conn.write("Invalid Command\r\n"); break;
         }
     }

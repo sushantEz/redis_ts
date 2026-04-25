@@ -7,7 +7,7 @@ export const enum EXNMode { NX = "nx", XX = "xx" }
 export const enum ETtlType { PX = "px", EX = "ex", NONE = "none", PXAT = "pxat", EXAT = "exat" };
 export const enum EDataType { NUMBER = "number", STRING = "string", LIST = "list", SET = "set", HASH = "hash", ZSET = "zset", STREAM = "stream", VECTOR_SET = "vectorset", JSON = "json" };
 
-export type TAuthenticConn = net.Socket & { isAuthentic: boolean; };
+export type TAuthenticConn = net.Socket & { isAuthentic: boolean; user: string; };
 
 export type TValMeta = { ttl: string, ttlType: ETtlType, at: number; dType: EDataType; version: number; };
 
@@ -59,7 +59,6 @@ export type TConnCmd = {
     conn: TAuthenticConn,
     cmds: Buffer[],
     wks: { [k: string]: string | number; }[],
-    unwks: { [k: string]: string | number; }[],
 };
 export type TUser = {
     pwds: string[];

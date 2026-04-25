@@ -63,8 +63,7 @@ export const getType = (conn: TAuthenticConn, [k]: string[]) => {
 export const watch = (conn: TAuthenticConn, wks: string[]) => {
     const connAddress = `${conn.remoteAddress}:${conn.remotePort}`;
     let cmdStoreData = CONN_CMDS.get(connAddress) || null;
-    if (!cmdStoreData) cmdStoreData = { conn, cmds: [], wks: [], unwks: [] };
-
+    if (!cmdStoreData) cmdStoreData = { conn, cmds: [], wks: [] };
     for (const wk of wks) {
         const v = (DATA.get(wk) as TValNum)?.version || -1;
         cmdStoreData.wks.push({ [wk]: v });
@@ -74,15 +73,21 @@ export const watch = (conn: TAuthenticConn, wks: string[]) => {
     return;
 };
 
+export const unwatch = (conn: TAuthenticConn) => {
+    const connAddress = `${conn.remoteAddress}:${conn.remotePort}`;
+    let cmdStoreData = CONN_CMDS.get(connAddress);
+    if (cmdStoreData && cmdStoreData.wks.length) {
+        cmdStoreData.wks.length = 0;
+        CONN_CMDS.set(connAddress, cmdStoreData);
+    }
+    conn.write("OK!\r\n");
+    return;
+};
+
 export const multi = (conn: TAuthenticConn) => {
     const connAddress = `${conn.remoteAddress}:${conn.remotePort}`;
     let cmdStoreData = CONN_CMDS.get(connAddress) || null;
-    if (!cmdStoreData) cmdStoreData = {
-        conn,
-        cmds: [],
-        wks: [],
-        unwks: []
-    };
+    if (!cmdStoreData) cmdStoreData = { conn, cmds: [], wks: [] };
     CONN_CMDS.set(connAddress, cmdStoreData);
     conn.write("OK\r\n");
     return;
@@ -121,12 +126,18 @@ export const exec = (conn: TAuthenticConn) => {
         }
     });
     if (txnDiscarded) return;
-    for (const [idx, cmd] of cmdStoreData.cmds.entries()) {
+    for (const [_, cmd] of cmdStoreData.cmds.entries()) {
         onData(conn, cmd, true);
     }
     CONN_CMDS.delete(connAddress);
     conn.write("exec done!\r\n");
+    return;
+};
 
+export const discard = (conn: TAuthenticConn) => {
+    const connAddress = `${conn.remoteAddress}:${conn.remotePort}`;
+    CONN_CMDS.delete(connAddress);
+    conn.write("OK!\r\n");
     return;
 };
 

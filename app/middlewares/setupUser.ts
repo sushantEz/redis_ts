@@ -17,6 +17,7 @@ export const setupRoot = (conn: TAuthenticConn, r: string[]) => {
         role: "root_user"
     });
     conn.isAuthentic = true;
+    conn.user = u;
     console.log(USERS);
     return;
 };

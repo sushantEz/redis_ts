@@ -4,11 +4,9 @@ export class UserStore<k, v> {
         this.store = new Map();
     }
 
-    get(k: k) { return this.store.get(k); }
-    set(k: k, v: v) { return this.store.set(k, v); }
-    del(k: k) { return this.store.delete(k); }
-    rootExists(key: keyof v, value: string) {
-        return Array.from(this.store.values()).find(e => e[key] === value);
-    }
-    getKeys() { return Array.from(this.store.keys()); }
+    get = (k: k) => this.store.get(k);
+    set = (k: k, v: v) => this.store.set(k, v);
+    del = (k: k) => this.store.delete(k);
+    rootExists = (key: keyof v, value: string) => Array.from(this.store.values()).find(e => e[key] === value);
+    getKeys = () => Array.from(this.store.keys());
 }

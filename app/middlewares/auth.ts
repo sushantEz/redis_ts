@@ -17,6 +17,7 @@ export const authenticate = (conn: TAuthenticConn, f: string, r: string[]): bool
     const isPasswordCorrect = user.pwds.find(pwd => verifyPassword(r[1], pwd));
     if (!isPasswordCorrect) return sendMsgAndDestroy(conn, "NOAUTH invalid password\r\n");
     conn.isAuthentic = true;
+    conn.user = r[0];
     conn.resume();
     return conn.isAuthentic;
 };
