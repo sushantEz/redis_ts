@@ -1,6 +1,6 @@
 import { USERS } from "../cache/data";
 import type { TAuthenticConn } from "../interfaces";
-import { generatePassword } from "../utils/password";
+import { generatePassword, hashPassword } from "../utils/password";
 
 export const acl = (conn: TAuthenticConn, [f, ...r]: string[]) => {
     switch (f.toLowerCase()) {
@@ -27,12 +27,27 @@ const getuser = (conn: TAuthenticConn, [r]: string[]) => {
     return;
 };
 const setuser = (conn: TAuthenticConn, r: string[]) => {
-    let [ur, ...rest] = r;
+    let [ur, pwd, ...rest] = r.map(e => e.trim());
     const u = USERS.getKeys().find(e => e == ur);
     if (u) {
         conn.write("ERR user already exists\r\n");
         return;
     }
+    if (!pwd) {
+        conn.write("ERR password is required\r\n");
+        return;
+    }
+    USERS.set(ur, {
+        pwds: [hashPassword(pwd)],
+        flgs: [],
+        ks: [],
+        cmds: [],
+        chnls: [],
+        role: USERS.rootExists("role", "root_user") ? "normal_user" : "root_user"
+    });
+    console.log({ u: USERS.get(ur) });
+    conn.write("OK!\r\n");
+    return;
 };
 const deluser = (conn: TAuthenticConn, r: string[]) => {
     let c = 0;

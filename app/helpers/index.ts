@@ -5,9 +5,9 @@ import type { TAuthenticConn } from "../interfaces";
 const cmdToIgnore = ["multi", "exec", "watch", "discard", "quit"];
 
 export const serialize = (d: Buffer) => {
-    const data = d.toString("utf-8").trim();
-    const [first, ...rest] = data.split(" ").filter(Boolean);
-    return { first, rest };
+    const cmd = d.toString("utf-8").trim();
+    const [first, ...rest] = cmd.split(" ").filter(Boolean);
+    return { first, rest, cmd };
 };
 
 export const queueCmd = (conn: TAuthenticConn, d: Buffer, f: string, fromExec?: boolean) => {

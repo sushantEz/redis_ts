@@ -2,7 +2,8 @@ import * as net from "net";
 import { config } from "dotenv";
 import { onData } from "./controllers";
 import { analizePort } from "./utils/portAnalizer";
-import type { TAuthenticConn } from "./interfaces";
+import { type TAuthenticConn } from "./interfaces";
+import { aof } from "./handlers/aof";
 
 config({ path: ".env" });
 
@@ -25,5 +26,8 @@ const server: net.Server = net.createServer((conn: net.Socket) => {
 
 (async () => {
     port = await analizePort(dynamicPort, defaultPort);
-    server.listen(port, () => console.log("redis server running on port:", port));
+    server.listen(port, () => {
+        console.log("redis server running on port:", port);
+        if (!aof.getProperty("isRewriteInProgress")) aof.loadAOF();
+    });
 })();

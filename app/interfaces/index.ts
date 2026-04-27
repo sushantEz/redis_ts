@@ -2,7 +2,12 @@ import * as net from "net";
 import { type DoublyLinkedList } from "../services/doublyLinkedList";
 
 export const tokens = ["px", "ex", "nx", "xx", "pxat", "exat", "echo", "set", "get", "nil", "expiry", "pexpiry", "ttl", "pttl", "sleep", "rpush", "rpop", "lpush", "lpop", "lrange", "llen", "blpop", "brpop", "inc", "incby", "incbyffloat", "dec", "decby", "multi", "exec", "watch", "info"];
+export const wCmds = ["set", "del", "expiry", "pexpiry", "inc", "incby", "dec", "decby", "lpush", "rpush", "lpop", "rpop", "xadd", "xdel", "xtrim", "multi", "exec"];
+export const aofDir = "./commands";
+export const aofPath = "./commands/cmd.aof";
 
+export const enum EAOnly { YES = "yes", NO = "no" }
+export const enum EAFsync { ALWAYS = "always", EVERYSEC = "everysec", NO = "no" }
 export const enum EXNMode { NX = "nx", XX = "xx" }
 export const enum ETtlType { PX = "px", EX = "ex", NONE = "none", PXAT = "pxat", EXAT = "exat" };
 export const enum EDataType { NUMBER = "number", STRING = "string", LIST = "list", SET = "set", HASH = "hash", ZSET = "zset", STREAM = "stream", VECTOR_SET = "vectorset", JSON = "json" };
@@ -68,3 +73,16 @@ export type TUser = {
     chnls: string[];
     role: "root_user" | "normal_user";
 };
+
+export type TAOFStates = {
+    aofpath: string;
+    aofdir: string;
+    appendonly: EAOnly;
+    appendfsync: EAFsync;
+    autoaofrewritepercentage: number;
+    autoaofrewriteminsize: number;
+};
+
+export type TSetAOFKey = keyof TAOFStates;
+export type TSetAOFVal = TAOFStates[TSetAOFKey];
+export type TSetAOFArgs = [TSetAOFKey, TSetAOFVal];
